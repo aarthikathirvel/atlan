@@ -265,27 +265,53 @@ https://drive.google.com/file/d/1VFR5qbxMqYz-UwTOfRmRE3crprW25jOj/view?usp=shari
 atlan/
 ├── src/
 │   ├── components/
-│   │   ├── QueryEditor.jsx          # SQL query editor component
-│   │   ├── ResultsTable.jsx         # Virtualized results table
-│   │   ├── QueryHistory.jsx         # Query history sidebar
-│   │   ├── QueryTemplates.jsx       # Query templates component
-│   │   └── ExportButtons.jsx        # Export functionality
-│   ├── data/
-│   │   └── mockData.js              # Mock data and query execution
+│   │   ├── QueryEditor.jsx              # SQL query editor with Ace Editor
+│   │   ├── QueryEditor.test.jsx         # Tests for QueryEditor
+│   │   ├── ResultsTable.jsx             # Virtualized results table with fullscreen mode
+│   │   ├── ResultsTable.test.jsx        # Tests for ResultsTable
+│   │   ├── QueryHistory.jsx             # Query history sidebar component
+│   │   ├── QueryHistory.test.jsx        # Tests for QueryHistory
+│   │   ├── QueryTemplates.jsx           # Query templates component
+│   │   ├── QueryTemplates.test.jsx      # Tests for QueryTemplates
+│   │   ├── QueryFavorites.jsx           # Saved/favorite queries component
+│   │   ├── ExportButtons.jsx            # Export functionality (CSV, JSON, Excel)
+│   │   ├── ExportButtons.test.jsx       # Tests for ExportButtons
+│   │   ├── ResultStatistics.jsx         # Data statistics and analysis panel
+│   │   ├── DataVisualization.jsx        # Data visualization component (charts)
+│   │   ├── QueryPerformanceDashboard.jsx # Performance metrics dashboard
+│   │   ├── QueryExplainPlan.jsx         # Query execution plan visualizer
+│   │   ├── QuerySuggestions.jsx         # Smart query suggestions
+│   │   └── KeyboardShortcuts.jsx        # Keyboard shortcuts help modal
 │   ├── hooks/
-│   │   └── useQueryHistory.js      # Custom hook for query history
+│   │   ├── useQueryHistory.js           # Custom hook for query history management
+│   │   ├── useQueryHistory.test.js      # Tests for useQueryHistory
+│   │   ├── useFavorites.js              # Custom hook for favorite queries
+│   │   └── useTheme.js                   # Custom hook for theme management
+│   ├── data/
+│   │   ├── mockData.js                   # Mock data and query execution logic
+│   │   └── mockData.test.js              # Tests for mockData
 │   ├── utils/
-│   │   └── exportUtils.js          # Export utility functions
+│   │   ├── exportUtils.js                # Export utility functions (CSV, JSON, Excel)
+│   │   └── exportUtils.test.js           # Tests for exportUtils
 │   ├── test/
-│   │   └── setup.js                # Test configuration
-│   ├── App.jsx                     # Main application component
-│   ├── App.css                     # Application styles
-│   ├── main.jsx                    # Application entry point
-│   └── index.css                   # Global styles
-├── public/                         # Static assets
-├── vite.config.js                 # Vite configuration
-├── package.json                    # Dependencies and scripts
-└── README.md                       # This file
+│   │   └── setup.js                      # Test configuration and setup
+│   ├── assets/
+│   │   └── react.svg                     # React logo asset
+│   ├── App.jsx                           # Main application component
+│   ├── App.css                           # Application styles
+│   ├── App.test.jsx                      # Tests for App component
+│   ├── main.jsx                          # Application entry point
+│   └── index.css                         # Global styles
+├── public/
+│   └── vite.svg                          # Vite logo
+├── dist/                                 # Production build output
+├── coverage/                             # Test coverage reports
+├── node_modules/                         # Dependencies
+├── vite.config.js                        # Vite configuration
+├── eslint.config.js                      # ESLint configuration
+├── package.json                          # Dependencies and scripts
+├── package-lock.json                     # Locked dependency versions
+└── README.md                             # This file
 ```
 
 ## 🎨 Design Decisions
