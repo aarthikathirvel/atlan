@@ -311,22 +311,6 @@ atlan/
 
 The application is deployed on Vercel and is accessible at: https://atlan-orpin.vercel.app/
 
-### Deployment Steps
-
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Deploy to Netlify:
-   - Connect your GitHub repository
-   - Set build command: `npm run build`
-   - Set publish directory: `dist`
-
-3. Deploy to Vercel:
-   - Connect your GitHub repository
-   - Vercel will auto-detect Vite configuration
-
 ## 📄 License
 
 This project is created for the Atlan Frontend Engineering assessment.
