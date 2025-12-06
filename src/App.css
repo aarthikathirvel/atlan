@@ -205,6 +205,7 @@
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .results-table-header {
@@ -232,13 +233,25 @@
 .results-table-wrapper {
   flex: 1;
   overflow: auto;
+  overflow-x: hidden;
   position: relative;
+  min-height: 0;
+  /* Hide scrollbar but keep scrolling functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.results-table-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .results-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.875rem;
+  position: relative;
+  table-layout: fixed;
 }
 
 .results-table-thead {
@@ -249,6 +262,10 @@
   color: white;
 }
 
+.results-table tbody {
+  position: relative;
+}
+
 .results-table-thead th {
   padding: 0.75rem 1rem;
   text-align: left;
@@ -257,6 +274,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .results-table tbody tr {
@@ -274,7 +292,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 300px;
+  box-sizing: border-box;
 }
 
 .results-table-empty,
@@ -418,7 +436,16 @@
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
+  padding-right: 0.25rem;
+  /* Hide scrollbar but keep scrolling functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.query-history-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .query-history-item {
@@ -427,12 +454,15 @@
   padding: 0.75rem;
   border: 1px solid #e9ecef;
   border-radius: 6px;
-  transition: all 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  box-sizing: border-box;
 }
 
 .query-history-item:hover {
   border-color: #667eea;
   background-color: #f7fafc;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
 }
 
 .query-history-item-content {
@@ -442,7 +472,6 @@
 
 .query-history-query {
   margin-bottom: 0.5rem;
-  cursor: pointer;
 }
 
 .query-history-query code {

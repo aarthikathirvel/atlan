@@ -37,9 +37,13 @@ const QueryHistory = ({ history, onSelectQuery, onClearHistory, onRemoveFromHist
       </div>
       <div className={`query-history-list ${isExpanded ? 'expanded' : ''}`}>
         {history.slice(0, isExpanded ? history.length : 5).map((entry) => (
-          <div key={entry.id} className="query-history-item">
+          <div 
+            key={entry.id} 
+            className="query-history-item"
+            onClick={() => onSelectQuery(entry.query)}
+          >
             <div className="query-history-item-content">
-              <div className="query-history-query" onClick={() => onSelectQuery(entry.query)}>
+              <div className="query-history-query">
                 <code>{entry.query}</code>
               </div>
               <div className="query-history-meta">
@@ -56,7 +60,10 @@ const QueryHistory = ({ history, onSelectQuery, onClearHistory, onRemoveFromHist
             </div>
             <button
               className="btn btn-icon"
-              onClick={() => onRemoveFromHistory(entry.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveFromHistory(entry.id);
+              }}
               title="Remove from history"
             >
               ×

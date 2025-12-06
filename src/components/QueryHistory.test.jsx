@@ -59,7 +59,7 @@ describe('QueryHistory', () => {
       },
     ];
 
-    render(
+    const { container } = render(
       <QueryHistory
         history={history}
         onSelectQuery={mockOnSelectQuery}
@@ -68,8 +68,9 @@ describe('QueryHistory', () => {
       />
     );
 
-    const queryElement = screen.getByText('SELECT * FROM users');
-    fireEvent.click(queryElement);
+    // Click anywhere on the history item (not just the query text)
+    const historyItem = container.querySelector('.query-history-item');
+    fireEvent.click(historyItem);
 
     expect(mockOnSelectQuery).toHaveBeenCalledWith('SELECT * FROM users');
   });
@@ -124,6 +125,8 @@ describe('QueryHistory', () => {
     fireEvent.click(removeButton);
 
     expect(mockOnRemoveFromHistory).toHaveBeenCalledWith(1);
+    // Should not trigger onSelectQuery when clicking remove button
+    expect(mockOnSelectQuery).not.toHaveBeenCalled();
   });
 
   it('should show expand/collapse functionality', () => {

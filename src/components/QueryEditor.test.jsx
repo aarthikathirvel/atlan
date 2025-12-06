@@ -109,8 +109,8 @@ describe('QueryEditor', () => {
     expect(executeButton).toBeDisabled();
   });
 
-  it('should call onExecute on Ctrl+Enter', () => {
-    render(
+  it('should call onExecute on Ctrl+Enter', async () => {
+    const { container } = render(
       <QueryEditor
         value="SELECT * FROM users"
         onChange={mockOnChange}
@@ -119,14 +119,23 @@ describe('QueryEditor', () => {
       />
     );
 
-    const editor = screen.getByTestId('ace-editor');
-    fireEvent.keyDown(editor, { key: 'Enter', ctrlKey: true });
+    // Wait for editor to load
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Focus the editor container
+    const editorContainer = container.querySelector('.query-editor-container');
+    if (editorContainer) {
+      editorContainer.focus();
+    }
+
+    // Simulate Ctrl+Enter keydown on document
+    fireEvent.keyDown(document, { key: 'Enter', ctrlKey: true });
 
     expect(mockOnExecute).toHaveBeenCalled();
   });
 
-  it('should call onExecute on Cmd+Enter', () => {
-    render(
+  it('should call onExecute on Cmd+Enter', async () => {
+    const { container } = render(
       <QueryEditor
         value="SELECT * FROM users"
         onChange={mockOnChange}
@@ -135,8 +144,17 @@ describe('QueryEditor', () => {
       />
     );
 
-    const editor = screen.getByTestId('ace-editor');
-    fireEvent.keyDown(editor, { key: 'Enter', metaKey: true });
+    // Wait for editor to load
+    await new Promise(resolve => setTimeout(resolve, 10));
+
+    // Focus the editor container
+    const editorContainer = container.querySelector('.query-editor-container');
+    if (editorContainer) {
+      editorContainer.focus();
+    }
+
+    // Simulate Cmd+Enter keydown on document
+    fireEvent.keyDown(document, { key: 'Enter', metaKey: true });
 
     expect(mockOnExecute).toHaveBeenCalled();
   });

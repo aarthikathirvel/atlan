@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-sql';
 import 'ace-builds/src-noconflict/theme-monokai';
@@ -6,26 +6,63 @@ import 'ace-builds/src-noconflict/ext-language_tools';
 
 const QueryEditor = ({ value, onChange, onExecute, isLoading }) => {
   const [localValue, setLocalValue] = useState(value || '');
+  const editorRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     setLocalValue(value || '');
   }, [value]);
+
+  useEffect(() => {
+    // Add global keyboard event listener as fallback
+    const handleKeyDown = (e) => {
+      // Check if the editor container is focused or contains the active element
+      // Also check if Ace editor is focused by checking for ace editor classes
+      const isEditorFocused = containerRef.current && (
+        containerRef.current.contains(document.activeElement) ||
+        containerRef.current === document.activeElement ||
+        document.activeElement?.closest('.ace_editor') ||
+        document.querySelector('.ace_editor.ace_focus')
+      );
+
+      if (isEditorFocused && (e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isLoading && localValue.trim()) {
+          onExecute();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [onExecute, isLoading, localValue]);
 
   const handleChange = (newValue) => {
     setLocalValue(newValue);
     onChange(newValue);
   };
 
-  const handleKeyDown = (e) => {
-    // Ctrl/Cmd + Enter to execute
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      onExecute();
-    }
+  const onLoad = (editor) => {
+    editorRef.current = { editor };
+    
+    // Register Ace Editor command for Ctrl/Cmd + Enter
+    editor.commands.addCommand({
+      name: 'executeQuery',
+      bindKey: { win: 'Ctrl-Enter', mac: 'Cmd-Enter' },
+      exec: () => {
+        if (!isLoading && localValue.trim()) {
+          onExecute();
+        }
+      },
+      readOnly: false,
+    });
   };
 
   return (
-    <div className="query-editor-container">
+    <div className="query-editor-container" ref={containerRef} tabIndex={-1}>
       <div className="query-editor-header">
         <h3>SQL Query Editor</h3>
         <div className="query-editor-actions">
@@ -53,7 +90,7 @@ const QueryEditor = ({ value, onChange, onExecute, isLoading }) => {
         theme="monokai"
         value={localValue}
         onChange={handleChange}
-        onKeyDown={handleKeyDown}
+        onLoad={onLoad}
         name="sql-editor"
         width="100%"
         height="300px"

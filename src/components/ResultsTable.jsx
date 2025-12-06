@@ -1,25 +1,51 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, message }) => {
   const parentRef = useRef(null);
+  const theadRef = useRef(null);
+  const [theadHeight, setTheadHeight] = useState(0);
+
+  useEffect(() => {
+    if (theadRef.current) {
+      setTheadHeight(theadRef.current.offsetHeight);
+    }
+  }, [columns]);
 
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 40,
     overscan: 10,
+    paddingStart: 0,
+    paddingEnd: 0,
   });
+
+  const [tableWidth, setTableWidth] = useState(1200);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (parentRef.current) {
+        setTableWidth(parentRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const columnWidths = useMemo(() => {
     if (columns.length === 0) return {};
-    const totalWidth = parentRef.current?.clientWidth || 1200;
-    const avgWidth = Math.max(150, totalWidth / columns.length);
+    const totalWidth = tableWidth;
+    // Account for borders (1px per column)
+    const borderWidth = columns.length * 1;
+    const availableWidth = totalWidth - borderWidth;
+    const avgWidth = Math.max(150, availableWidth / columns.length);
     return columns.reduce((acc, col) => {
       acc[col] = avgWidth;
       return acc;
     }, {});
-  }, [columns]);
+  }, [columns, tableWidth]);
 
   // No query executed yet
   if (!columns.length && !rows.length) {
@@ -76,56 +102,62 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
         </div>
       </div>
       <div className="results-table-wrapper" ref={parentRef}>
-        <div
-          style={{
-            height: `${virtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          <table className="results-table">
-            <thead className="results-table-thead">
-              <tr>
-                {columns.map((col) => (
-                  <th
-                    key={col}
-                    style={{ width: `${columnWidths[col]}px`, minWidth: '150px' }}
-                  >
-                    {col}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {virtualizer.getVirtualItems().map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                return (
-                  <tr
-                    key={virtualRow.index}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    {columns.map((col) => (
-                      <td
-                        key={col}
-                        style={{ width: `${columnWidths[col]}px`, minWidth: '150px' }}
-                        title={String(row[col] ?? '')}
-                      >
-                        {String(row[col] ?? '')}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <table className="results-table">
+          <thead className="results-table-thead" ref={theadRef}>
+            <tr>
+              {columns.map((col) => (
+                <th
+                  key={col}
+                  style={{ 
+                    width: `${columnWidths[col]}px`, 
+                    minWidth: '150px',
+                    maxWidth: `${columnWidths[col]}px`,
+                  }}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody
+            style={{
+              position: 'relative',
+              height: `${virtualizer.getTotalSize()}px`,
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = rows[virtualRow.index];
+              if (!row) return null; // Safety check
+              return (
+                <tr
+                  key={virtualRow.index}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: `${virtualRow.start}px`,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                  }}
+                >
+                  {columns.map((col) => (
+                    <td
+                      key={col}
+                      style={{ 
+                        width: `${columnWidths[col]}px`, 
+                        minWidth: '150px',
+                        maxWidth: `${columnWidths[col]}px`,
+                      }}
+                      title={String(row[col] ?? '')}
+                    >
+                      {String(row[col] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
