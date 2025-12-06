@@ -3,9 +3,11 @@ import QueryEditor from './components/QueryEditor';
 import ResultsTable from './components/ResultsTable';
 import QueryHistory from './components/QueryHistory';
 import QueryTemplates from './components/QueryTemplates';
+import QueryFavorites from './components/QueryFavorites';
 import ExportButtons from './components/ExportButtons';
 import { executeQuery } from './data/mockData';
 import { useQueryHistory } from './hooks/useQueryHistory';
+import { useFavorites } from './hooks/useFavorites';
 import './App.css';
 
 function App() {
@@ -14,6 +16,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const { history, addToHistory, clearHistory, removeFromHistory } = useQueryHistory();
+  const { favorites, addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
   const handleExecuteQuery = useCallback(() => {
     if (!query.trim()) {
@@ -59,6 +62,14 @@ function App() {
       <main className="app-main">
         <div className="app-sidebar">
           <QueryTemplates onSelectTemplate={handleSelectTemplate} />
+          <QueryFavorites
+            favorites={favorites}
+            onSelectQuery={handleSelectHistoryQuery}
+            onRemoveFavorite={removeFromFavorites}
+            onAddFavorite={addToFavorites}
+            currentQuery={query}
+            isFavorite={isFavorite(query)}
+          />
           <QueryHistory
             history={history}
             onSelectQuery={handleSelectHistoryQuery}
@@ -112,13 +123,13 @@ function App() {
               </div>
             )}
           </div>
-      </div>
+        </div>
       </main>
 
       <footer className="app-footer">
         <p>SQL Query Runner - Built with React & Vite</p>
       </footer>
-      </div>
+    </div>
   );
 }
 

@@ -1,7 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 const QueryHistory = ({ history, onSelectQuery, onClearHistory, onRemoveFromHistory }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Always call hooks at the top level
+  const filteredHistory = useMemo(() => {
+    if (!searchTerm.trim()) return history;
+    const term = searchTerm.toLowerCase();
+    return history.filter(entry => 
+      entry.query.toLowerCase().includes(term)
+    );
+  }, [history, searchTerm]);
+
+  const displayHistory = isExpanded ? filteredHistory : filteredHistory.slice(0, 5);
 
   if (history.length === 0) {
     return (
@@ -35,8 +47,33 @@ const QueryHistory = ({ history, onSelectQuery, onClearHistory, onRemoveFromHist
           </button>
         </div>
       </div>
+      {history.length > 0 && (
+        <div className="query-history-search">
+          <input
+            type="text"
+            placeholder="🔍 Search history..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="query-history-search-input"
+          />
+          {searchTerm && (
+            <button
+              className="btn btn-icon btn-sm"
+              onClick={() => setSearchTerm('')}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
       <div className={`query-history-list ${isExpanded ? 'expanded' : ''}`}>
-        {history.slice(0, isExpanded ? history.length : 5).map((entry) => (
+        {displayHistory.length === 0 && searchTerm ? (
+          <div className="query-history-empty">
+            <p>No queries found matching "{searchTerm}"</p>
+          </div>
+        ) : (
+          displayHistory.map((entry) => (
           <div 
             key={entry.id} 
             className="query-history-item"
@@ -69,14 +106,15 @@ const QueryHistory = ({ history, onSelectQuery, onClearHistory, onRemoveFromHist
               ×
             </button>
           </div>
-        ))}
-        {!isExpanded && history.length > 5 && (
+          ))
+        )}
+        {!isExpanded && filteredHistory.length > 5 && (
           <div className="query-history-more">
             <button
               className="btn btn-link"
               onClick={() => setIsExpanded(true)}
             >
-              Show {history.length - 5} more...
+              Show {filteredHistory.length - 5} more...
             </button>
           </div>
         )}

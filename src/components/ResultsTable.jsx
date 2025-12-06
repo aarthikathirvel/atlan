@@ -5,21 +5,13 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   const parentRef = useRef(null);
   const theadRef = useRef(null);
   const [theadHeight, setTheadHeight] = useState(0);
+  const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
 
   useEffect(() => {
     if (theadRef.current) {
       setTheadHeight(theadRef.current.offsetHeight);
     }
   }, [columns]);
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 10,
-    paddingStart: 0,
-    paddingEnd: 0,
-  });
 
   const [tableWidth, setTableWidth] = useState(1200);
 
@@ -46,6 +38,52 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
       return acc;
     }, {});
   }, [columns, tableWidth]);
+
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.column || rows.length === 0) return rows;
+    
+    return [...rows].sort((a, b) => {
+      const aVal = a[sortConfig.column];
+      const bVal = b[sortConfig.column];
+      
+      // Handle null/undefined
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      
+      // Try numeric comparison
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+      
+      // String comparison
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      if (sortConfig.direction === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+  }, [rows, sortConfig]);
+
+  const virtualizer = useVirtualizer({
+    count: sortedRows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 40,
+    overscan: 10,
+    paddingStart: 0,
+    paddingEnd: 0,
+  });
+
+  const handleSort = (column) => {
+    setSortConfig(prevConfig => ({
+      column,
+      direction: prevConfig.column === column && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
 
   // No query executed yet
   if (!columns.length && !rows.length) {
@@ -84,7 +122,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
       <div className="results-table-header">
         <div className="results-info">
           <span className="info-item">
-            <strong>Rows:</strong> {rows.length.toLocaleString()}
+            <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
           </span>
           <span className="info-item">
             <strong>Columns:</strong> {columns.length}
@@ -113,8 +151,18 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                     minWidth: '150px',
                     maxWidth: `${columnWidths[col]}px`,
                   }}
+                  className={sortConfig.column === col ? `sortable sorted-${sortConfig.direction}` : 'sortable'}
+                  onClick={() => handleSort(col)}
+                  title={`Click to sort by ${col}`}
                 >
-                  {col}
+                  <span className="th-content">
+                    {col}
+                    {sortConfig.column === col && (
+                      <span className="sort-indicator">
+                        {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
+                      </span>
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -126,7 +174,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
             }}
           >
             {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
+              const row = sortedRows[virtualRow.index];
               if (!row) return null; // Safety check
               return (
                 <tr
