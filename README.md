@@ -28,8 +28,6 @@ A modern, feature-rich web application for running SQL queries and viewing resul
   - Numeric column analysis: min, max, average, median, sum
   - Categorical column analysis: unique values, top values with frequencies
   - Real-time statistics calculation
-- **Dark/Light Theme Toggle**: Seamless theme switching with persistent preferences
-- **Keyboard Shortcuts Help**: Interactive modal with all available shortcuts
 - **Enhanced Query Editor**: 
   - SQL syntax highlighting with Ace Editor
   - Auto-completion and code snippets
@@ -59,7 +57,7 @@ A modern, feature-rich web application for running SQL queries and viewing resul
 - **xlsx 0.18.5**: Excel file generation library for exporting query results to Excel format
 
 #### UI & Styling
-- **CSS3**: Custom CSS with CSS Variables for theming support
+- **CSS3**: Custom CSS with modern styling
 - **Flexbox & Grid**: Modern CSS layout techniques for responsive design
 
 ### Development Dependencies
@@ -273,8 +271,7 @@ Please record a concise walkthrough video (under 3 minutes) that demonstrates th
 
 8. **Additional Features** (if time permits)
    - Saving queries to favorites
-   - Using keyboard shortcuts
-   - Theme toggle (dark/light mode)
+   - Using keyboard shortcuts (Ctrl/Cmd + Enter)
    - Column visibility controls
 
 ### Video Recording Tips
