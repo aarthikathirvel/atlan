@@ -6,6 +6,8 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   const theadRef = useRef(null);
   const [theadHeight, setTheadHeight] = useState(0);
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
+  const [filterTerm, setFilterTerm] = useState('');
+  const [filterColumn, setFilterColumn] = useState('all');
 
   useEffect(() => {
     if (theadRef.current) {
@@ -39,10 +41,29 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
     }, {});
   }, [columns, tableWidth]);
 
-  const sortedRows = useMemo(() => {
-    if (!sortConfig.column || rows.length === 0) return rows;
+  const filteredRows = useMemo(() => {
+    if (!filterTerm.trim()) return rows;
     
-    return [...rows].sort((a, b) => {
+    const term = filterTerm.toLowerCase();
+    return rows.filter(row => {
+      if (filterColumn === 'all') {
+        // Search across all columns
+        return columns.some(col => {
+          const value = String(row[col] ?? '').toLowerCase();
+          return value.includes(term);
+        });
+      } else {
+        // Search in specific column
+        const value = String(row[filterColumn] ?? '').toLowerCase();
+        return value.includes(term);
+      }
+    });
+  }, [rows, filterTerm, filterColumn, columns]);
+
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.column || filteredRows.length === 0) return filteredRows;
+    
+    return [...filteredRows].sort((a, b) => {
       const aVal = a[sortConfig.column];
       const bVal = b[sortConfig.column];
       
@@ -67,7 +88,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
         return bStr.localeCompare(aStr);
       }
     });
-  }, [rows, sortConfig]);
+  }, [filteredRows, sortConfig]);
 
   const virtualizer = useVirtualizer({
     count: sortedRows.length,
@@ -117,12 +138,82 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
     );
   }
 
+  // Filter applied but no matching results
+  if (filterTerm.trim() && filteredRows.length === 0) {
+    return (
+      <div className="results-table-container">
+        <div className="results-table-header">
+          <div className="results-info">
+            <span className="info-item">
+              <strong>Rows:</strong> 0 of {rows.length.toLocaleString()}
+            </span>
+            <span className="info-item">
+              <strong>Columns:</strong> {columns.length}
+            </span>
+          </div>
+          <div className="results-table-filter">
+            <select
+              className="results-filter-column"
+              value={filterColumn}
+              onChange={(e) => setFilterColumn(e.target.value)}
+              title="Filter by column"
+            >
+              <option value="all">All Columns</option>
+              {columns.map(col => (
+                <option key={col} value={col}>{col}</option>
+              ))}
+            </select>
+            <div className="results-filter-input-wrapper">
+              <input
+                type="text"
+                className="results-filter-input"
+                placeholder="🔍 Filter results..."
+                value={filterTerm}
+                onChange={(e) => setFilterTerm(e.target.value)}
+              />
+              <button
+                className="btn btn-icon btn-sm results-filter-clear"
+                onClick={() => {
+                  setFilterTerm('');
+                  setFilterColumn('all');
+                }}
+                title="Clear filter"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="results-table-empty">
+          <div className="empty-result-icon">🔍</div>
+          <p className="empty-result-title">No Matching Results</p>
+          <p className="empty-result-message">
+            No rows match the filter "{filterTerm}" in {filterColumn === 'all' ? 'any column' : filterColumn}.
+          </p>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setFilterTerm('');
+              setFilterColumn('all');
+            }}
+            style={{ marginTop: '1rem' }}
+          >
+            Clear Filter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="results-table-container">
       <div className="results-table-header">
         <div className="results-info">
           <span className="info-item">
             <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
+            {filterTerm.trim() && (
+              <span className="filter-indicator"> of {rows.length.toLocaleString()}</span>
+            )}
           </span>
           <span className="info-item">
             <strong>Columns:</strong> {columns.length}
@@ -138,6 +229,42 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
             </span>
           )}
         </div>
+        {columns.length > 0 && rows.length > 0 && (
+          <div className="results-table-filter">
+            <select
+              className="results-filter-column"
+              value={filterColumn}
+              onChange={(e) => setFilterColumn(e.target.value)}
+              title="Filter by column"
+            >
+              <option value="all">All Columns</option>
+              {columns.map(col => (
+                <option key={col} value={col}>{col}</option>
+              ))}
+            </select>
+            <div className="results-filter-input-wrapper">
+              <input
+                type="text"
+                className="results-filter-input"
+                placeholder="🔍 Filter results..."
+                value={filterTerm}
+                onChange={(e) => setFilterTerm(e.target.value)}
+              />
+              {filterTerm && (
+                <button
+                  className="btn btn-icon btn-sm results-filter-clear"
+                  onClick={() => {
+                    setFilterTerm('');
+                    setFilterColumn('all');
+                  }}
+                  title="Clear filter"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <div className="results-table-wrapper" ref={parentRef}>
         <table className="results-table">
