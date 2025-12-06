@@ -2,7 +2,7 @@
 export const mockQueries = {
   'SELECT * FROM users': {
     columns: ['id', 'name', 'email', 'age', 'city', 'created_at'],
-    rows: Array.from({ length: 10000 }, (_, i) => ({
+    rows: Array.from({ length: 110 }, (_, i) => ({
       id: i + 1,
       name: `User ${i + 1}`,
       email: `user${i + 1}@example.com`,
@@ -13,7 +13,7 @@ export const mockQueries = {
   },
   'SELECT * FROM orders': {
     columns: ['order_id', 'customer_id', 'product', 'quantity', 'price', 'order_date', 'status'],
-    rows: Array.from({ length: 5000 }, (_, i) => ({
+    rows: Array.from({ length: 110 }, (_, i) => ({
       order_id: i + 1,
       customer_id: Math.floor(Math.random() * 1000) + 1,
       product: ['Laptop', 'Phone', 'Tablet', 'Monitor', 'Keyboard'][Math.floor(Math.random() * 5)],
@@ -25,7 +25,7 @@ export const mockQueries = {
   },
   'SELECT * FROM products': {
     columns: ['product_id', 'name', 'category', 'price', 'stock', 'supplier'],
-    rows: Array.from({ length: 2000 }, (_, i) => ({
+    rows: Array.from({ length: 110 }, (_, i) => ({
       product_id: i + 1,
       name: `Product ${i + 1}`,
       category: ['Electronics', 'Clothing', 'Food', 'Books', 'Toys'][Math.floor(Math.random() * 5)],
@@ -36,7 +36,7 @@ export const mockQueries = {
   },
   'SELECT * FROM employees': {
     columns: ['emp_id', 'first_name', 'last_name', 'department', 'salary', 'hire_date'],
-    rows: Array.from({ length: 3000 }, (_, i) => ({
+    rows: Array.from({ length: 110 }, (_, i) => ({
       emp_id: i + 1,
       first_name: ['John', 'Jane', 'Mike', 'Sarah', 'David', 'Emily'][Math.floor(Math.random() * 6)],
       last_name: ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia'][Math.floor(Math.random() * 6)],
@@ -47,7 +47,7 @@ export const mockQueries = {
   },
   'SELECT * FROM transactions': {
     columns: ['transaction_id', 'account_id', 'type', 'amount', 'balance', 'timestamp'],
-    rows: Array.from({ length: 15000 }, (_, i) => ({
+    rows: Array.from({ length: 110 }, (_, i) => ({
       transaction_id: i + 1,
       account_id: Math.floor(Math.random() * 500) + 1,
       type: ['Deposit', 'Withdrawal', 'Transfer'][Math.floor(Math.random() * 3)],

@@ -94,16 +94,6 @@ function App() {
           </div>
 
           <div className="results-section">
-            <div className="results-section-header">
-              <h2>Query Results</h2>
-              {result && (
-                <ExportButtons
-                  columns={result.data.columns}
-                  rows={result.data.rows}
-                  disabled={isLoading}
-                />
-              )}
-            </div>
             {isLoading ? (
               <div className="loading-state">
                 <div className="spinner"></div>

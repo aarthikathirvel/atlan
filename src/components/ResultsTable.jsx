@@ -1,5 +1,6 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import ExportButtons from './ExportButtons';
 
 const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, message }) => {
   const parentRef = useRef(null);
@@ -11,12 +12,42 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [copiedCell, setCopiedCell] = useState(null);
+  const [isCopyingRows, setIsCopyingRows] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState(new Set(columns));
 
   useEffect(() => {
     if (theadRef.current) {
       setTheadHeight(theadRef.current.offsetHeight);
     }
   }, [columns]);
+
+  useEffect(() => {
+    setVisibleColumns(new Set(columns));
+  }, [columns]);
+
+  const visibleColumnsArray = useMemo(() => {
+    return columns.filter(col => visibleColumns.has(col));
+  }, [columns, visibleColumns]);
+
+  const toggleColumnVisibility = useCallback((col) => {
+    setVisibleColumns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(col)) {
+        newSet.delete(col);
+      } else {
+        newSet.add(col);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const showAllColumns = useCallback(() => {
+    setVisibleColumns(new Set(columns));
+  }, [columns]);
+
+  const hideAllColumns = useCallback(() => {
+    setVisibleColumns(new Set());
+  }, []);
 
   const [tableWidth, setTableWidth] = useState(1200);
 
@@ -42,18 +73,23 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   }, [isFullScreen]);
 
   const columnWidths = useMemo(() => {
-    if (columns.length === 0) return {};
+    if (visibleColumnsArray.length === 0) return {};
     const totalWidth = tableWidth;
-    // Account for checkbox column (50px) and borders (1px per column + checkbox)
+    // Account for checkbox column (50px)
     const checkboxColumnWidth = 50;
-    const borderWidth = (columns.length + 1) * 1; // +1 for checkbox column
+    // Account for borders: 1px right border per column (including checkbox)
+    const borderWidth = (visibleColumnsArray.length + 1) * 1;
     const availableWidth = totalWidth - checkboxColumnWidth - borderWidth;
-    const avgWidth = Math.max(150, availableWidth / columns.length);
-    return columns.reduce((acc, col) => {
-      acc[col] = avgWidth;
+    const avgWidth = Math.floor(availableWidth / visibleColumnsArray.length);
+    // Calculate total width used
+    const totalUsedWidth = (avgWidth * visibleColumnsArray.length) + checkboxColumnWidth + borderWidth;
+    // Distribute any remaining pixels to first columns
+    const remainder = totalWidth - totalUsedWidth;
+    return visibleColumnsArray.reduce((acc, col, index) => {
+      acc[col] = avgWidth + (index < remainder ? 1 : 0);
       return acc;
     }, {});
-  }, [columns, tableWidth]);
+  }, [visibleColumnsArray, tableWidth]);
 
   const filteredRows = useMemo(() => {
     if (!filterTerm.trim()) return rows;
@@ -168,19 +204,18 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
     const selectedData = Array.from(selectedRows)
       .sort((a, b) => a - b)
       .map(index => sortedRows[index])
-      .map(row => columns.map(col => String(row[col] ?? '')).join('\t'))
+      .map(row => visibleColumnsArray.map(col => String(row[col] ?? '')).join('\t'))
       .join('\n');
     
-    const headerRow = columns.join('\t');
+    const headerRow = visibleColumnsArray.join('\t');
     const fullText = `${headerRow}\n${selectedData}`;
     
     navigator.clipboard.writeText(fullText).then(() => {
-      // Show feedback
-      const originalSize = selectedRows.size;
-      setSelectedRows(new Set());
+      // Show visual feedback on button only
+      setIsCopyingRows(true);
       setTimeout(() => {
-        alert(`Copied ${originalSize} row(s) to clipboard`);
-      }, 100);
+        setIsCopyingRows(false);
+      }, 2000);
     }).catch(() => {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
@@ -191,11 +226,11 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      const originalSize = selectedRows.size;
-      setSelectedRows(new Set());
+      // Show visual feedback on button only
+      setIsCopyingRows(true);
       setTimeout(() => {
-        alert(`Copied ${originalSize} row(s) to clipboard`);
-      }, 100);
+        setIsCopyingRows(false);
+      }, 2000);
     });
   }, [selectedRows, sortedRows, columns]);
 
@@ -241,7 +276,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
               <strong>Rows:</strong> 0 of {rows.length.toLocaleString()}
             </span>
             <span className="info-item">
-              <strong>Columns:</strong> {columns.length}
+              <strong>Columns:</strong> {visibleColumnsArray.length}
             </span>
           </div>
           <div className="results-table-filter">
@@ -252,7 +287,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
               title="Filter by column"
             >
               <option value="all">All Columns</option>
-              {columns.map(col => (
+              {visibleColumnsArray.map(col => (
                 <option key={col} value={col}>{col}</option>
               ))}
             </select>
@@ -300,29 +335,43 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
 
   return (
     <div className="results-table-container">
-      <div className="results-table-header">
-        <div className="results-info">
-          <span className="info-item">
-            <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
-            {filterTerm.trim() && (
-              <span className="filter-indicator"> of {rows.length.toLocaleString()}</span>
-            )}
-          </span>
-          <span className="info-item">
-            <strong>Columns:</strong> {columns.length}
-          </span>
-          {executionTime && (
-            <span className="info-item">
-              <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
-            </span>
+      {!isFullScreen && (
+        <div className="results-table-header">
+          <div className="results-header-top">
+            <div className="results-title-section">
+              <h2 className="results-title">Query Results</h2>
+              <div className="results-info">
+              <span className="info-item">
+                <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
+                {filterTerm.trim() && (
+                  <span className="filter-indicator"> of {rows.length.toLocaleString()}</span>
+                )}
+              </span>
+              <span className="info-item">
+                <strong>Columns:</strong> {visibleColumnsArray.length}
+              </span>
+              {executionTime && (
+                <span className="info-item">
+                  <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
+                </span>
+              )}
+              {rowsAffected !== undefined && (
+                <span className="info-item">
+                  <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+                </span>
+              )}
+            </div>
+          </div>
+          {columns.length > 0 && rows.length > 0 && (
+            <div className="results-header-actions">
+              <ExportButtons columns={visibleColumnsArray} rows={sortedRows} />
+            </div>
           )}
-          {rowsAffected !== undefined && (
-            <span className="info-item">
-              <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
-            </span>
-          )}
+          </div>
         </div>
-        {columns.length > 0 && rows.length > 0 && (
+      )}
+      {!isFullScreen && columns.length > 0 && rows.length > 0 && (
+        <div className="results-table-header">
           <div className="results-table-controls">
             <div className="results-table-filter">
               <select
@@ -359,15 +408,16 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
               </div>
             </div>
             <div className="results-table-actions">
-              {selectedRows.size > 0 && (
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={copySelectedRows}
-                  title={`Copy ${selectedRows.size} selected row(s)`}
-                >
-                  📋 Copy {selectedRows.size} Row{selectedRows.size > 1 ? 's' : ''}
-                </button>
-              )}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  const modal = document.getElementById('column-visibility-modal');
+                  if (modal) modal.style.display = 'flex';
+                }}
+                title="Show/Hide Columns"
+              >
+                👁️ Show/Hide Columns
+              </button>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => setIsFullScreen(!isFullScreen)}
@@ -375,15 +425,26 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
               >
                 {isFullScreen ? '⤓ Exit Fullscreen' : '⤢ Fullscreen'}
               </button>
+              <div className="copy-rows-button-container">
+                {selectedRows.size > 0 && (
+                  <button
+                    className={`btn btn-secondary btn-sm copy-rows-button ${isCopyingRows ? 'copy-rows-button-copied' : ''}`}
+                    onClick={copySelectedRows}
+                    title={`Copy ${selectedRows.size} selected row(s)`}
+                  >
+                    {isCopyingRows ? '✓ Copied!' : `📋 Copy ${selectedRows.size} Row${selectedRows.size > 1 ? 's' : ''}`}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       <div className={`results-table-wrapper ${isFullScreen ? 'fullscreen' : ''}`}>
         {isFullScreen && (
           <div className="fullscreen-header">
             <div className="fullscreen-header-left">
-              <h3>Query Results - Full Screen</h3>
+              <h3>Query Results</h3>
               <div className="results-info">
                 <span className="info-item">
                   <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
@@ -392,7 +453,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                   )}
                 </span>
                 <span className="info-item">
-                  <strong>Columns:</strong> {columns.length}
+                  <strong>Columns:</strong> {visibleColumnsArray.length}
                 </span>
                 {executionTime && (
                   <span className="info-item">
@@ -443,15 +504,28 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                   </div>
                 </div>
                 <div className="results-table-actions">
-                  {selectedRows.size > 0 && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={copySelectedRows}
-                      title={`Copy ${selectedRows.size} selected row(s)`}
-                    >
-                      📋 Copy {selectedRows.size} Row{selectedRows.size > 1 ? 's' : ''}
-                    </button>
-                  )}
+                  <ExportButtons columns={visibleColumnsArray} rows={sortedRows} />
+                  <div className="copy-rows-button-container">
+                    {selectedRows.size > 0 && (
+                      <button
+                        className={`btn btn-secondary btn-sm copy-rows-button ${isCopyingRows ? 'copy-rows-button-copied' : ''}`}
+                        onClick={copySelectedRows}
+                        title={`Copy ${selectedRows.size} selected row(s)`}
+                      >
+                        {isCopyingRows ? '✓ Copied!' : `📋 Copy ${selectedRows.size} Row${selectedRows.size > 1 ? 's' : ''}`}
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      const modal = document.getElementById('column-visibility-modal');
+                      if (modal) modal.style.display = 'flex';
+                    }}
+                    title="Show/Hide Columns"
+                  >
+                    👁️ Show/Hide Columns
+                  </button>
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={() => setIsFullScreen(false)}
@@ -468,7 +542,19 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
           <table className="results-table">
             <thead className="results-table-thead" ref={theadRef}>
               <tr>
-                <th className="select-column">
+                <th 
+                  className="select-column"
+                  style={{
+                    width: '50px',
+                    minWidth: '50px',
+                    maxWidth: '50px',
+                    paddingLeft: '0.5rem',
+                    paddingRight: '0.5rem',
+                    paddingTop: '0.75rem',
+                    paddingBottom: '0.75rem',
+                    textAlign: 'center',
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={selectedRows.size === sortedRows.length && sortedRows.length > 0}
@@ -476,26 +562,40 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                     title="Select all rows"
                   />
                 </th>
-                {columns.map((col) => (
+                {visibleColumnsArray.map((col) => (
                   <th
                     key={col}
                     style={{ 
                       width: `${columnWidths[col]}px`, 
-                      minWidth: '150px',
+                      minWidth: `${columnWidths[col]}px`,
                       maxWidth: `${columnWidths[col]}px`,
+                      paddingLeft: '1rem',
+                      paddingRight: '1rem',
+                      paddingTop: '0.75rem',
+                      paddingBottom: '0.75rem',
                     }}
                     className={sortConfig.column === col ? `sortable sorted-${sortConfig.direction}` : 'sortable'}
                     onClick={() => handleSort(col)}
                     title={`Click to sort by ${col}`}
                   >
-                    <span className="th-content">
-                      {col}
-                      {sortConfig.column === col && (
-                        <span className="sort-indicator">
-                          {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
-                        </span>
-                      )}
-                    </span>
+                    <div className="th-content-wrapper">
+                      <span className="th-content">
+                        {col}
+                        {sortConfig.column === col ? (
+                          <span className="sort-indicator">
+                            {sortConfig.direction === 'asc' ? (
+                              <span className="sort-icon sort-asc">▲</span>
+                            ) : (
+                              <span className="sort-icon sort-desc">▼</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="sort-indicator sort-inactive">
+                            <span className="sort-icon sort-both">⇅</span>
+                          </span>
+                        )}
+                      </span>
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -524,7 +624,18 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                       height: `${virtualRow.size}px`,
                     }}
                   >
-                    <td className="select-cell">
+                    <td 
+                      className="select-cell"
+                      style={{
+                        width: '50px',
+                        minWidth: '50px',
+                        maxWidth: '50px',
+                        paddingLeft: '0.5rem',
+                        paddingRight: '0.5rem',
+                        paddingTop: '0.75rem',
+                        paddingBottom: '0.75rem',
+                      }}
+                    >
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -532,7 +643,7 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                         onClick={(e) => e.stopPropagation()}
                       />
                     </td>
-                    {columns.map((col) => {
+                    {visibleColumnsArray.map((col) => {
                       const cellKey = `${rowIndex}-${col}`;
                       const isCopied = copiedCell === cellKey;
                       return (
@@ -540,14 +651,20 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
                           key={col}
                           style={{ 
                             width: `${columnWidths[col]}px`, 
-                            minWidth: '150px',
+                            minWidth: `${columnWidths[col]}px`,
                             maxWidth: `${columnWidths[col]}px`,
+                            paddingLeft: '1rem',
+                            paddingRight: '1rem',
+                            paddingTop: '0.75rem',
+                            paddingBottom: '0.75rem',
                           }}
                           title={String(row[col] ?? '')}
                           className={isCopied ? 'cell-copied' : 'cell-clickable'}
                           onClick={() => handleCopyCell(row[col], rowIndex, col)}
                         >
-                          {isCopied ? '✓ Copied!' : String(row[col] ?? '')}
+                          <div className="cell-content-wrapper">
+                            {isCopied ? '✓ Copied!' : String(row[col] ?? '')}
+                          </div>
                         </td>
                       );
                     })}
@@ -556,6 +673,43 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+      {/* Column Visibility Modal */}
+      <div id="column-visibility-modal" className="column-visibility-modal" onClick={(e) => {
+        if (e.target.id === 'column-visibility-modal') {
+          e.currentTarget.style.display = 'none';
+        }
+      }}>
+        <div className="column-visibility-content" onClick={(e) => e.stopPropagation()}>
+          <div className="column-visibility-header">
+            <h3>Show/Hide Columns</h3>
+            <button 
+              className="btn btn-icon" 
+              onClick={() => {
+                const modal = document.getElementById('column-visibility-modal');
+                if (modal) modal.style.display = 'none';
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <div className="column-visibility-list">
+            {columns.map(col => (
+              <label key={col} className="column-visibility-item">
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.has(col)}
+                  onChange={() => toggleColumnVisibility(col)}
+                />
+                <span>{col}</span>
+              </label>
+            ))}
+          </div>
+          <div className="column-visibility-actions">
+            <button className="btn btn-secondary btn-sm" onClick={hideAllColumns}>Hide All</button>
+            <button className="btn btn-primary btn-sm" onClick={showAllColumns}>Show All</button>
+          </div>
         </div>
       </div>
     </div>

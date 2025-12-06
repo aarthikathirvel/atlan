@@ -50,9 +50,9 @@ describe('ResultsTable', () => {
 
     // Check for table headers (th elements)
     const headers = screen.getAllByRole('columnheader');
-    expect(headers.some(h => h.textContent === 'id')).toBe(true);
-    expect(headers.some(h => h.textContent === 'name')).toBe(true);
-    expect(headers.some(h => h.textContent === 'email')).toBe(true);
+    expect(headers.some(h => h.textContent.includes('id'))).toBe(true);
+    expect(headers.some(h => h.textContent.includes('name'))).toBe(true);
+    expect(headers.some(h => h.textContent.includes('email'))).toBe(true);
   });
 
   it('should display execution info', () => {
@@ -103,7 +103,7 @@ describe('ResultsTable', () => {
 
     // Check for table headers (th elements)
     const headers = screen.getAllByRole('columnheader');
-    expect(headers.some(h => h.textContent === 'id')).toBe(true);
+    expect(headers.some(h => h.textContent.includes('id'))).toBe(true);
   });
 });
 

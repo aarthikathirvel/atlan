@@ -66,32 +66,6 @@ const QueryEditor = ({ value, onChange, onExecute, isLoading }) => {
     }
   };
 
-  const handleFormatQuery = () => {
-    if (!localValue.trim()) return;
-    
-    // Simple SQL formatting
-    let formatted = localValue
-      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-      .replace(/\s*,\s*/g, ', ') // Format commas
-      .replace(/\s*\(\s*/g, ' (') // Format opening parentheses
-      .replace(/\s*\)\s*/g, ') ') // Format closing parentheses
-      .replace(/\s*=\s*/g, ' = ') // Format equals
-      .replace(/\s*SELECT\s+/gi, '\nSELECT ')
-      .replace(/\s*FROM\s+/gi, '\nFROM ')
-      .replace(/\s*WHERE\s+/gi, '\nWHERE ')
-      .replace(/\s*JOIN\s+/gi, '\nJOIN ')
-      .replace(/\s*LEFT JOIN\s+/gi, '\nLEFT JOIN ')
-      .replace(/\s*RIGHT JOIN\s+/gi, '\nRIGHT JOIN ')
-      .replace(/\s*INNER JOIN\s+/gi, '\nINNER JOIN ')
-      .replace(/\s*GROUP BY\s+/gi, '\nGROUP BY ')
-      .replace(/\s*ORDER BY\s+/gi, '\nORDER BY ')
-      .replace(/\s*HAVING\s+/gi, '\nHAVING ')
-      .trim();
-    
-    setLocalValue(formatted);
-    onChange(formatted);
-  };
-
   const onLoad = (editor) => {
     editorRef.current = { editor };
     
@@ -127,14 +101,6 @@ const QueryEditor = ({ value, onChange, onExecute, isLoading }) => {
             title="Copy query to clipboard"
           >
             📋 Copy
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={handleFormatQuery}
-            disabled={isLoading || !localValue.trim()}
-            title="Format SQL query"
-          >
-            ✨ Format
           </button>
           <button
             className="btn btn-secondary"

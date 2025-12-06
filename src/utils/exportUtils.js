@@ -1,5 +1,23 @@
 // Utility functions for exporting query results
 
+export const exportToExcel = (columns, rows) => {
+  // Dynamic import to avoid bundling xlsx in main bundle
+  import('xlsx').then((XLSX) => {
+    const data = [
+      columns, // Headers
+      ...rows.map(row => columns.map(col => row[col] ?? '')) // Data rows
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    XLSX.writeFile(wb, `query_results_${Date.now()}.xlsx`);
+  }).catch((error) => {
+    console.error('Error exporting to Excel:', error);
+    alert('Failed to export to Excel. Please try again.');
+  });
+};
+
 export const exportToCSV = (columns, rows) => {
   const headers = columns.join(',');
   const csvRows = rows.map(row => 

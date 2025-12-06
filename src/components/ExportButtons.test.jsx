@@ -6,9 +6,10 @@ import ExportButtons from './ExportButtons';
 vi.mock('../utils/exportUtils', () => ({
   exportToCSV: vi.fn(),
   exportToJSON: vi.fn(),
+  exportToExcel: vi.fn(),
 }));
 
-import { exportToCSV, exportToJSON } from '../utils/exportUtils';
+import { exportToCSV, exportToJSON, exportToExcel } from '../utils/exportUtils';
 
 describe('ExportButtons', () => {
   beforeEach(() => {
@@ -24,14 +25,13 @@ describe('ExportButtons', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render export buttons when data is available', () => {
+  it('should render export button when data is available', () => {
     const columns = ['id', 'name'];
     const rows = [{ id: 1, name: 'John' }];
 
     render(<ExportButtons columns={columns} rows={rows} disabled={false} />);
 
-    expect(screen.getByText(/Export CSV/)).toBeInTheDocument();
-    expect(screen.getByText(/Export JSON/)).toBeInTheDocument();
+    expect(screen.getByText(/Export/)).toBeInTheDocument();
   });
 
   it('should call exportToCSV when CSV button is clicked', () => {
@@ -39,6 +39,9 @@ describe('ExportButtons', () => {
     const rows = [{ id: 1, name: 'John' }];
 
     render(<ExportButtons columns={columns} rows={rows} disabled={false} />);
+
+    const exportButton = screen.getByText(/Export/);
+    fireEvent.click(exportButton);
 
     const csvButton = screen.getByText(/Export CSV/);
     fireEvent.click(csvButton);
@@ -52,22 +55,37 @@ describe('ExportButtons', () => {
 
     render(<ExportButtons columns={columns} rows={rows} disabled={false} />);
 
+    const exportButton = screen.getByText(/Export/);
+    fireEvent.click(exportButton);
+
     const jsonButton = screen.getByText(/Export JSON/);
     fireEvent.click(jsonButton);
 
     expect(exportToJSON).toHaveBeenCalledWith(columns, rows);
   });
 
-  it('should disable buttons when disabled prop is true', () => {
+  it('should disable button when disabled prop is true', () => {
     const columns = ['id', 'name'];
     const rows = [{ id: 1, name: 'John' }];
 
     render(<ExportButtons columns={columns} rows={rows} disabled={true} />);
 
-    const csvButton = screen.getByText(/Export CSV/);
-    const jsonButton = screen.getByText(/Export JSON/);
+    const exportButton = screen.getByText(/Export/);
+    expect(exportButton).toBeDisabled();
+  });
 
-    expect(csvButton).toBeDisabled();
-    expect(jsonButton).toBeDisabled();
+  it('should call exportToExcel when Excel button is clicked', () => {
+    const columns = ['id', 'name'];
+    const rows = [{ id: 1, name: 'John' }];
+
+    render(<ExportButtons columns={columns} rows={rows} disabled={false} />);
+
+    const exportButton = screen.getByText(/Export/);
+    fireEvent.click(exportButton);
+
+    const excelButton = screen.getByText(/Export Excel/);
+    fireEvent.click(excelButton);
+
+    expect(exportToExcel).toHaveBeenCalledWith(columns, rows);
   });
 });
