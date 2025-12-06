@@ -227,68 +227,8 @@ The application can handle datasets with **15,000+ rows** without any performanc
 
 ## 🎬 Walkthrough Video
 
-### Video Requirements
-Please record a concise walkthrough video (under 3 minutes) that demonstrates the following:
-
-1. **Application Launch**
-   - Opening the application in a browser
-   - Initial page load and interface overview
-
-2. **Query Template Selection**
-   - Navigating to the Query Templates section in the sidebar
-   - Selecting a pre-defined query template (e.g., "Get All Users")
-   - Template query automatically loaded into the editor
-
-3. **Query Execution**
-   - Executing the query using the "Execute Query" button
-   - Demonstrating the keyboard shortcut (Ctrl/Cmd + Enter)
-   - Showing the loading state during execution
-
-4. **Results Viewing**
-   - Viewing query results in the virtualized table
-   - Demonstrating table features:
-     - Sorting by clicking column headers
-     - Filtering results using the filter input
-     - Scrolling through large datasets smoothly
-     - Copying cell values by clicking
-     - Row selection with checkboxes
-
-5. **Statistics Tab**
-   - Switching to the Statistics tab
-   - Viewing data statistics including:
-     - Numeric column statistics (min, max, average, median)
-     - Categorical column analysis (unique values, top values)
-
-6. **Export Functionality**
-   - Exporting results to CSV format
-   - Exporting results to JSON format
-   - Exporting results to Excel format
-
-7. **Query History**
-   - Viewing query history in the sidebar
-   - Selecting a previous query from history
-   - Executing multiple queries and viewing their history
-
-8. **Additional Features** (if time permits)
-   - Saving queries to favorites
-   - Using keyboard shortcuts (Ctrl/Cmd + Enter)
-   - Column visibility controls
-
-### Video Recording Tips
-- Use screen recording software (OBS, Loom, or QuickTime)
-- Ensure good audio quality if including narration
-- Keep the video focused and concise
-- Highlight key features and performance aspects
-- Show smooth interactions and fast load times
-
-### Video Upload
-Once recorded, upload the video to:
-- YouTube (unlisted)
-- Google Drive
-- Dropbox
-- Or any video hosting service
-
-Include the video link in this README or provide it separately.
+### Video
+https://drive.google.com/file/d/1VFR5qbxMqYz-UwTOfRmRE3crprW25jOj/view?usp=sharing
 
 ## 📝 Usage
 
@@ -369,7 +309,7 @@ atlan/
 
 ## 🚀 Deployment
 
-The application is deployed on [Netlify/Vercel] and accessible at: [Deployment URL]
+The application is deployed on Vercel and is accessible at: https://atlan-orpin.vercel.app/
 
 ### Deployment Steps
 
