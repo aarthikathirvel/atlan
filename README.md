@@ -372,149 +372,23 @@ atlan/
 
 ## 🚀 Deployment
 
-### Recommended: Deploy to Vercel
+The application is deployed on [Netlify/Vercel] and accessible at: [Deployment URL]
 
-Vercel is recommended for React/Vite applications due to its excellent performance, automatic HTTPS, and seamless GitHub integration.
+### Deployment Steps
 
-#### Option 1: Deploy via Vercel Dashboard (Easiest)
+1. Build the application:
+```bash
+npm run build
+```
 
-1. **Sign up/Login to Vercel:**
-   - Go to https://vercel.com
-   - Sign up with your GitHub account
+2. Deploy to Netlify:
+   - Connect your GitHub repository
+   - Set build command: `npm run build`
+   - Set publish directory: `dist`
 
-2. **Import Your Repository:**
-   - Click "Add New..." → "Project"
-   - Import your GitHub repository: `aarthikathirvel/atlan`
+3. Deploy to Vercel:
+   - Connect your GitHub repository
    - Vercel will auto-detect Vite configuration
-
-3. **Configure Build Settings:**
-   - Framework Preset: **Vite** (auto-detected)
-   - Build Command: `npm run build` (auto-detected)
-   - Output Directory: `dist` (auto-detected)
-   - Install Command: `npm install` (auto-detected)
-
-4. **Deploy:**
-   - Click "Deploy"
-   - Wait for build to complete (~1-2 minutes)
-   - Your app will be live at: `https://atlan-xxxxx.vercel.app`
-
-5. **Custom Domain (Optional):**
-   - Go to Project Settings → Domains
-   - Add your custom domain
-
-#### Option 2: Deploy via Vercel CLI
-
-1. **Install Vercel CLI:**
-```bash
-npm i -g vercel
-```
-
-2. **Login to Vercel:**
-```bash
-vercel login
-```
-
-3. **Deploy:**
-```bash
-vercel
-```
-
-4. **Follow the prompts:**
-   - Link to existing project or create new
-   - Confirm settings
-   - Deploy!
-
-5. **For production deployment:**
-```bash
-vercel --prod
-```
-
-### Alternative: Deploy to Netlify
-
-Netlify is also an excellent choice with similar features.
-
-#### Option 1: Deploy via Netlify Dashboard
-
-1. **Sign up/Login to Netlify:**
-   - Go to https://www.netlify.com
-   - Sign up with your GitHub account
-
-2. **Import Your Repository:**
-   - Click "Add new site" → "Import an existing project"
-   - Connect to GitHub and select `aarthikathirvel/atlan`
-
-3. **Configure Build Settings:**
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-   - Base directory: (leave empty)
-
-4. **Deploy:**
-   - Click "Deploy site"
-   - Wait for build to complete
-   - Your app will be live at: `https://random-name-xxxxx.netlify.app`
-
-5. **Custom Domain (Optional):**
-   - Go to Site settings → Domain management
-   - Add your custom domain
-
-#### Option 2: Deploy via Netlify CLI
-
-1. **Install Netlify CLI:**
-```bash
-npm install -g netlify-cli
-```
-
-2. **Login to Netlify:**
-```bash
-netlify login
-```
-
-3. **Initialize and Deploy:**
-```bash
-netlify init
-netlify deploy --prod
-```
-
-### Build Configuration
-
-Both platforms use the configuration files included in the repository:
-- **Vercel**: `vercel.json` (already configured)
-- **Netlify**: `netlify.toml` (already configured)
-
-### Environment Variables
-
-If you need to add environment variables:
-- **Vercel**: Project Settings → Environment Variables
-- **Netlify**: Site Settings → Environment Variables
-
-### Continuous Deployment
-
-Both platforms automatically deploy when you push to your main branch:
-- Push to `main` → Automatic deployment
-- Pull requests → Preview deployments
-
-### Deployment Checklist
-
-- [ ] Repository is pushed to GitHub
-- [ ] Build command works locally (`npm run build`)
-- [ ] All dependencies are in `package.json`
-- [ ] No hardcoded API keys or secrets
-- [ ] Environment variables configured (if needed)
-
-### Troubleshooting
-
-**Build fails:**
-- Check build logs in Vercel/Netlify dashboard
-- Ensure Node.js version is compatible (20.19+ or 22.12+)
-- Verify all dependencies are in `package.json`
-
-**404 errors on routes:**
-- Ensure redirect rules are configured (already in config files)
-- Check that `index.html` is in the output directory
-
-**Assets not loading:**
-- Verify base path in `vite.config.js` (if using subdirectory)
-- Check that all assets are in the `dist` folder
 
 ## 📄 License
 
