@@ -104,6 +104,7 @@ function App() {
                 rows={result.data.rows}
                 executionTime={result.executionTime}
                 rowsAffected={result.rowsAffected}
+                message={result.message}
               />
             ) : (
               <div className="no-results">

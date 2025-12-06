@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
-const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected }) => {
+const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, message }) => {
   const parentRef = useRef(null);
 
   const virtualizer = useVirtualizer({
@@ -21,10 +21,34 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected }) 
     }, {});
   }, [columns]);
 
-  if (!columns.length || !rows.length) {
+  // No query executed yet
+  if (!columns.length && !rows.length) {
     return (
       <div className="results-table-empty">
         <p>No results to display. Execute a query to see results.</p>
+      </div>
+    );
+  }
+
+  // Query executed but returned no rows
+  if (columns.length > 0 && rows.length === 0) {
+    return (
+      <div className="results-table-empty">
+        <div className="empty-result-icon">📭</div>
+        <p className="empty-result-title">No Results Found</p>
+        <p className="empty-result-message">
+          {message || 'The query executed successfully but returned no rows.'}
+        </p>
+        {rowsAffected !== undefined && (
+          <p className="empty-result-info">
+            <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+          </p>
+        )}
+        {executionTime && (
+          <p className="empty-result-info">
+            <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
+          </p>
+        )}
       </div>
     );
   }

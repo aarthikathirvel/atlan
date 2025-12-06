@@ -16,9 +16,27 @@ vi.mock('@tanstack/react-virtual', () => ({
 }));
 
 describe('ResultsTable', () => {
-  it('should render empty state when no data', () => {
+  it('should render empty state when no query executed', () => {
     render(<ResultsTable columns={[]} rows={[]} />);
     expect(screen.getByText(/No results to display/)).toBeInTheDocument();
+  });
+
+  it('should render empty result state when query returns no rows', () => {
+    const columns = ['id', 'name', 'email'];
+    const rows = [];
+
+    render(
+      <ResultsTable
+        columns={columns}
+        rows={rows}
+        executionTime={100}
+        rowsAffected={0}
+        message="Query executed successfully but returned no rows."
+      />
+    );
+
+    expect(screen.getByText(/No Results Found/i)).toBeInTheDocument();
+    expect(screen.getByText(/Query executed successfully but returned no rows/i)).toBeInTheDocument();
   });
 
   it('should render table with columns and rows', () => {

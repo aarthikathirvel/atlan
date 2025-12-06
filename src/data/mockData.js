@@ -71,6 +71,39 @@ export const queryTemplates = [
 export const executeQuery = (query) => {
   const normalizedQuery = query.trim().toUpperCase();
   
+  // Check for queries that should return empty results (WHERE clauses that filter everything)
+  if (normalizedQuery.includes('WHERE') && (
+    normalizedQuery.includes('ID = 999999') ||
+    normalizedQuery.includes('ID > 999999') ||
+    normalizedQuery.includes('NAME = \'NONEXISTENT\'') ||
+    normalizedQuery.includes('1 = 0')
+  )) {
+    // Determine columns based on table
+    let columns = [];
+    if (normalizedQuery.includes('FROM USERS')) {
+      columns = ['id', 'name', 'email', 'age', 'city', 'created_at'];
+    } else if (normalizedQuery.includes('FROM ORDERS')) {
+      columns = ['order_id', 'customer_id', 'product', 'quantity', 'price', 'order_date', 'status'];
+    } else if (normalizedQuery.includes('FROM PRODUCTS')) {
+      columns = ['product_id', 'name', 'category', 'price', 'stock', 'supplier'];
+    } else if (normalizedQuery.includes('FROM EMPLOYEES')) {
+      columns = ['emp_id', 'first_name', 'last_name', 'department', 'salary', 'hire_date'];
+    } else if (normalizedQuery.includes('FROM TRANSACTIONS')) {
+      columns = ['transaction_id', 'account_id', 'type', 'amount', 'balance', 'timestamp'];
+    }
+    
+    return {
+      success: true,
+      data: {
+        columns: columns,
+        rows: [],
+      },
+      executionTime: Math.random() * 200 + 20,
+      rowsAffected: 0,
+      message: 'Query executed successfully but returned no rows matching the criteria.',
+    };
+  }
+  
   // Find matching query
   for (const [key, data] of Object.entries(mockQueries)) {
     if (normalizedQuery.includes(key.toUpperCase())) {
@@ -83,15 +116,16 @@ export const executeQuery = (query) => {
     }
   }
   
-  // Default response for unmatched queries
+  // Default response for unmatched queries - return empty result
   return {
     success: true,
     data: {
-      columns: ['message'],
-      rows: [{ message: 'Query executed successfully. No data returned.' }],
+      columns: [],
+      rows: [],
     },
     executionTime: Math.random() * 100 + 10,
     rowsAffected: 0,
+    message: 'Query executed successfully but returned no results.',
   };
 };
 

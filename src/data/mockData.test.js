@@ -56,15 +56,32 @@ describe('mockData', () => {
     it('should return default response for unmatched queries', () => {
       const result = executeQuery('SELECT * FROM unknown_table');
       expect(result.success).toBe(true);
-      expect(result.data.columns).toEqual(['message']);
-      expect(result.data.rows.length).toBe(1);
+      expect(result.data.columns).toEqual([]);
+      expect(result.data.rows.length).toBe(0);
       expect(result.rowsAffected).toBe(0);
+      expect(result.message).toBeDefined();
     });
 
     it('should return execution time for all queries', () => {
       const result = executeQuery('SELECT * FROM users');
       expect(result.executionTime).toBeGreaterThan(0);
       expect(typeof result.executionTime).toBe('number');
+    });
+
+    it('should return empty result for queries with WHERE clause that filters everything', () => {
+      const result = executeQuery('SELECT * FROM users WHERE id = 999999');
+      expect(result.success).toBe(true);
+      expect(result.data.columns.length).toBeGreaterThan(0);
+      expect(result.data.rows.length).toBe(0);
+      expect(result.rowsAffected).toBe(0);
+      expect(result.message).toBeDefined();
+    });
+
+    it('should return empty result for queries with impossible WHERE conditions', () => {
+      const result = executeQuery('SELECT * FROM orders WHERE 1 = 0');
+      expect(result.success).toBe(true);
+      expect(result.data.rows.length).toBe(0);
+      expect(result.rowsAffected).toBe(0);
     });
   });
 
