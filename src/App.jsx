@@ -5,9 +5,12 @@ import QueryHistory from './components/QueryHistory';
 import QueryTemplates from './components/QueryTemplates';
 import QueryFavorites from './components/QueryFavorites';
 import ExportButtons from './components/ExportButtons';
+import ResultStatistics from './components/ResultStatistics';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
 import { executeQuery } from './data/mockData';
 import { useQueryHistory } from './hooks/useQueryHistory';
 import { useFavorites } from './hooks/useFavorites';
+import { useTheme } from './hooks/useTheme';
 import './App.css';
 
 function App() {
@@ -15,8 +18,10 @@ function App() {
   const [result, setResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('table');
   const { history, addToHistory, clearHistory, removeFromHistory } = useQueryHistory();
   const { favorites, addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const { theme, toggleTheme } = useTheme();
 
   const handleExecuteQuery = useCallback(() => {
     if (!query.trim()) {
@@ -53,10 +58,24 @@ function App() {
   }, []);
 
   return (
-    <div className="app">
+    <div className="app" data-theme={theme}>
       <header className="app-header">
-        <h1>🚀 SQL Query Runner</h1>
-        <p className="app-subtitle">Execute SQL queries and view results instantly</p>
+        <div className="header-content">
+          <div>
+            <h1>🚀 SQL Query Runner</h1>
+            <p className="app-subtitle">Execute SQL queries and view results instantly</p>
+          </div>
+          <div className="header-actions">
+            <KeyboardShortcuts />
+            <button
+              className="btn btn-secondary btn-sm theme-toggle"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+          </div>
+        </div>
       </header>
 
       <main className="app-main">
@@ -100,13 +119,39 @@ function App() {
                 <p>Executing query...</p>
               </div>
             ) : result ? (
-              <ResultsTable
-                columns={result.data.columns}
-                rows={result.data.rows}
-                executionTime={result.executionTime}
-                rowsAffected={result.rowsAffected}
-                message={result.message}
-              />
+              <>
+                <div className="results-tabs">
+                  <button
+                    className={`tab-button ${activeTab === 'table' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('table')}
+                  >
+                    📊 Table
+                  </button>
+                  <button
+                    className={`tab-button ${activeTab === 'statistics' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('statistics')}
+                  >
+                    📉 Statistics
+                  </button>
+                </div>
+                <div className="results-tab-content">
+                  {activeTab === 'table' && (
+                    <ResultsTable
+                      columns={result.data.columns}
+                      rows={result.data.rows}
+                      executionTime={result.executionTime}
+                      rowsAffected={result.rowsAffected}
+                      message={result.message}
+                    />
+                  )}
+                  {activeTab === 'statistics' && (
+                    <ResultStatistics
+                      columns={result.data.columns}
+                      rows={result.data.rows}
+                    />
+                  )}
+                </div>
+              </>
             ) : (
               <div className="no-results">
                 <p>No results to display. Execute a query to see results here.</p>

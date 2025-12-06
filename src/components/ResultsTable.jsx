@@ -5,7 +5,7 @@ import ExportButtons from './ExportButtons';
 const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, message }) => {
   const parentRef = useRef(null);
   const theadRef = useRef(null);
-  const [theadHeight, setTheadHeight] = useState(0);
+  const [, setTheadHeight] = useState(0);
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
   const [filterTerm, setFilterTerm] = useState('');
   const [filterColumn, setFilterColumn] = useState('all');

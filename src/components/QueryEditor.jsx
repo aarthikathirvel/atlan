@@ -10,6 +10,7 @@ const QueryEditor = ({ value, onChange, onExecute, isLoading }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalValue(value || '');
   }, [value]);
 
