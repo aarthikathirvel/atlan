@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, message }) => {
@@ -8,6 +8,9 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
   const [filterTerm, setFilterTerm] = useState('');
   const [filterColumn, setFilterColumn] = useState('all');
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [copiedCell, setCopiedCell] = useState(null);
 
   useEffect(() => {
     if (theadRef.current) {
@@ -25,15 +28,26 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
+    let resizeObserver;
+    if (parentRef.current && window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(updateWidth);
+      resizeObserver.observe(parentRef.current);
+    }
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [isFullScreen]);
 
   const columnWidths = useMemo(() => {
     if (columns.length === 0) return {};
     const totalWidth = tableWidth;
-    // Account for borders (1px per column)
-    const borderWidth = columns.length * 1;
-    const availableWidth = totalWidth - borderWidth;
+    // Account for checkbox column (50px) and borders (1px per column + checkbox)
+    const checkboxColumnWidth = 50;
+    const borderWidth = (columns.length + 1) * 1; // +1 for checkbox column
+    const availableWidth = totalWidth - checkboxColumnWidth - borderWidth;
     const avgWidth = Math.max(150, availableWidth / columns.length);
     return columns.reduce((acc, col) => {
       acc[col] = avgWidth;
@@ -105,6 +119,85 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
       direction: prevConfig.column === column && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
+
+  const handleCopyCell = useCallback((value, rowIndex, col) => {
+    const cellValue = String(value ?? '');
+    navigator.clipboard.writeText(cellValue).then(() => {
+      const cellKey = `${rowIndex}-${col}`;
+      setCopiedCell(cellKey);
+      setTimeout(() => setCopiedCell(null), 2000);
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = cellValue;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      const cellKey = `${rowIndex}-${col}`;
+      setCopiedCell(cellKey);
+      setTimeout(() => setCopiedCell(null), 2000);
+    });
+  }, []);
+
+  const toggleRowSelection = useCallback((rowIndex) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowIndex)) {
+        newSet.delete(rowIndex);
+      } else {
+        newSet.add(rowIndex);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const selectAllRows = useCallback(() => {
+    if (selectedRows.size === sortedRows.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(sortedRows.map((_, index) => index)));
+    }
+  }, [selectedRows.size, sortedRows.length]);
+
+  const copySelectedRows = useCallback(() => {
+    if (selectedRows.size === 0) return;
+    
+    const selectedData = Array.from(selectedRows)
+      .sort((a, b) => a - b)
+      .map(index => sortedRows[index])
+      .map(row => columns.map(col => String(row[col] ?? '')).join('\t'))
+      .join('\n');
+    
+    const headerRow = columns.join('\t');
+    const fullText = `${headerRow}\n${selectedData}`;
+    
+    navigator.clipboard.writeText(fullText).then(() => {
+      // Show feedback
+      const originalSize = selectedRows.size;
+      setSelectedRows(new Set());
+      setTimeout(() => {
+        alert(`Copied ${originalSize} row(s) to clipboard`);
+      }, 100);
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = fullText;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      const originalSize = selectedRows.size;
+      setSelectedRows(new Set());
+      setTimeout(() => {
+        alert(`Copied ${originalSize} row(s) to clipboard`);
+      }, 100);
+    });
+  }, [selectedRows, sortedRows, columns]);
 
   // No query executed yet
   if (!columns.length && !rows.length) {
@@ -230,109 +323,240 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
           )}
         </div>
         {columns.length > 0 && rows.length > 0 && (
-          <div className="results-table-filter">
-            <select
-              className="results-filter-column"
-              value={filterColumn}
-              onChange={(e) => setFilterColumn(e.target.value)}
-              title="Filter by column"
-            >
-              <option value="all">All Columns</option>
-              {columns.map(col => (
-                <option key={col} value={col}>{col}</option>
-              ))}
-            </select>
-            <div className="results-filter-input-wrapper">
-              <input
-                type="text"
-                className="results-filter-input"
-                placeholder="🔍 Filter results..."
-                value={filterTerm}
-                onChange={(e) => setFilterTerm(e.target.value)}
-              />
-              {filterTerm && (
+          <div className="results-table-controls">
+            <div className="results-table-filter">
+              <select
+                className="results-filter-column"
+                value={filterColumn}
+                onChange={(e) => setFilterColumn(e.target.value)}
+                title="Filter by column"
+              >
+                <option value="all">All Columns</option>
+                {columns.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+              <div className="results-filter-input-wrapper">
+                <input
+                  type="text"
+                  className="results-filter-input"
+                  placeholder="🔍 Filter results..."
+                  value={filterTerm}
+                  onChange={(e) => setFilterTerm(e.target.value)}
+                />
+                {filterTerm && (
+                  <button
+                    className="btn btn-icon btn-sm results-filter-clear"
+                    onClick={() => {
+                      setFilterTerm('');
+                      setFilterColumn('all');
+                    }}
+                    title="Clear filter"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="results-table-actions">
+              {selectedRows.size > 0 && (
                 <button
-                  className="btn btn-icon btn-sm results-filter-clear"
-                  onClick={() => {
-                    setFilterTerm('');
-                    setFilterColumn('all');
-                  }}
-                  title="Clear filter"
+                  className="btn btn-secondary btn-sm"
+                  onClick={copySelectedRows}
+                  title={`Copy ${selectedRows.size} selected row(s)`}
                 >
-                  ×
+                  📋 Copy {selectedRows.size} Row{selectedRows.size > 1 ? 's' : ''}
                 </button>
               )}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+              >
+                {isFullScreen ? '⤓ Exit Fullscreen' : '⤢ Fullscreen'}
+              </button>
             </div>
           </div>
         )}
       </div>
-      <div className="results-table-wrapper" ref={parentRef}>
-        <table className="results-table">
-          <thead className="results-table-thead" ref={theadRef}>
-            <tr>
-              {columns.map((col) => (
-                <th
-                  key={col}
-                  style={{ 
-                    width: `${columnWidths[col]}px`, 
-                    minWidth: '150px',
-                    maxWidth: `${columnWidths[col]}px`,
-                  }}
-                  className={sortConfig.column === col ? `sortable sorted-${sortConfig.direction}` : 'sortable'}
-                  onClick={() => handleSort(col)}
-                  title={`Click to sort by ${col}`}
-                >
-                  <span className="th-content">
-                    {col}
-                    {sortConfig.column === col && (
-                      <span className="sort-indicator">
-                        {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
-                      </span>
-                    )}
+      <div className={`results-table-wrapper ${isFullScreen ? 'fullscreen' : ''}`}>
+        {isFullScreen && (
+          <div className="fullscreen-header">
+            <div className="fullscreen-header-left">
+              <h3>Query Results - Full Screen</h3>
+              <div className="results-info">
+                <span className="info-item">
+                  <strong>Rows:</strong> {sortedRows.length.toLocaleString()}
+                  {filterTerm.trim() && (
+                    <span className="filter-indicator"> of {rows.length.toLocaleString()}</span>
+                  )}
+                </span>
+                <span className="info-item">
+                  <strong>Columns:</strong> {columns.length}
+                </span>
+                {executionTime && (
+                  <span className="info-item">
+                    <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
                   </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody
-            style={{
-              position: 'relative',
-              height: `${virtualizer.getTotalSize()}px`,
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = sortedRows[virtualRow.index];
-              if (!row) return null; // Safety check
-              return (
-                <tr
-                  key={virtualRow.index}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: `${virtualRow.start}px`,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                  }}
-                >
-                  {columns.map((col) => (
-                    <td
-                      key={col}
-                      style={{ 
-                        width: `${columnWidths[col]}px`, 
-                        minWidth: '150px',
-                        maxWidth: `${columnWidths[col]}px`,
-                      }}
-                      title={String(row[col] ?? '')}
+                )}
+                {rowsAffected !== undefined && (
+                  <span className="info-item">
+                    <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="fullscreen-header-right">
+              <div className="results-table-controls">
+                <div className="results-table-filter">
+                  <select
+                    className="results-filter-column"
+                    value={filterColumn}
+                    onChange={(e) => setFilterColumn(e.target.value)}
+                    title="Filter by column"
+                  >
+                    <option value="all">All Columns</option>
+                    {columns.map(col => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                  <div className="results-filter-input-wrapper">
+                    <input
+                      type="text"
+                      className="results-filter-input"
+                      placeholder="🔍 Filter results..."
+                      value={filterTerm}
+                      onChange={(e) => setFilterTerm(e.target.value)}
+                    />
+                    {filterTerm && (
+                      <button
+                        className="btn btn-icon btn-sm results-filter-clear"
+                        onClick={() => {
+                          setFilterTerm('');
+                          setFilterColumn('all');
+                        }}
+                        title="Clear filter"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="results-table-actions">
+                  {selectedRows.size > 0 && (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={copySelectedRows}
+                      title={`Copy ${selectedRows.size} selected row(s)`}
                     >
-                      {String(row[col] ?? '')}
+                      📋 Copy {selectedRows.size} Row{selectedRows.size > 1 ? 's' : ''}
+                    </button>
+                  )}
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsFullScreen(false)}
+                    title="Exit full screen"
+                  >
+                    ⤓ Exit Fullscreen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className={isFullScreen ? 'fullscreen-table-container' : ''} ref={parentRef}>
+          <table className="results-table">
+            <thead className="results-table-thead" ref={theadRef}>
+              <tr>
+                <th className="select-column">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.size === sortedRows.length && sortedRows.length > 0}
+                    onChange={selectAllRows}
+                    title="Select all rows"
+                  />
+                </th>
+                {columns.map((col) => (
+                  <th
+                    key={col}
+                    style={{ 
+                      width: `${columnWidths[col]}px`, 
+                      minWidth: '150px',
+                      maxWidth: `${columnWidths[col]}px`,
+                    }}
+                    className={sortConfig.column === col ? `sortable sorted-${sortConfig.direction}` : 'sortable'}
+                    onClick={() => handleSort(col)}
+                    title={`Click to sort by ${col}`}
+                  >
+                    <span className="th-content">
+                      {col}
+                      {sortConfig.column === col && (
+                        <span className="sort-indicator">
+                          {sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody
+              style={{
+                position: 'relative',
+                height: `${virtualizer.getTotalSize()}px`,
+              }}
+            >
+              {virtualizer.getVirtualItems().map((virtualRow) => {
+                const row = sortedRows[virtualRow.index];
+                if (!row) return null; // Safety check
+                const rowIndex = virtualRow.index;
+                const isSelected = selectedRows.has(rowIndex);
+                return (
+                  <tr
+                    key={virtualRow.index}
+                    data-index={virtualRow.index}
+                    className={isSelected ? 'row-selected' : ''}
+                    style={{
+                      position: 'absolute',
+                      top: `${virtualRow.start}px`,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                    }}
+                  >
+                    <td className="select-cell">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleRowSelection(rowIndex)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </td>
-                  ))}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    {columns.map((col) => {
+                      const cellKey = `${rowIndex}-${col}`;
+                      const isCopied = copiedCell === cellKey;
+                      return (
+                        <td
+                          key={col}
+                          style={{ 
+                            width: `${columnWidths[col]}px`, 
+                            minWidth: '150px',
+                            maxWidth: `${columnWidths[col]}px`,
+                          }}
+                          title={String(row[col] ?? '')}
+                          className={isCopied ? 'cell-copied' : 'cell-clickable'}
+                          onClick={() => handleCopyCell(row[col], rowIndex, col)}
+                        >
+                          {isCopied ? '✓ Copied!' : String(row[col] ?? '')}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
