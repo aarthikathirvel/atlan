@@ -9,7 +9,59 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' });
   const [filterTerm, setFilterTerm] = useState('');
   const [filterColumn, setFilterColumn] = useState('all');
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  // Use ref to track fullscreen state - this NEVER resets
+  const getInitialFullscreen = () => {
+    try {
+      const saved = sessionStorage.getItem('results-table-fullscreen');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  };
+  const fullscreenRef = useRef(getInitialFullscreen());
+
+  // State that always syncs with ref and sessionStorage
+  const [isFullScreen, setIsFullScreenState] = useState(fullscreenRef.current);
+
+  // Custom setter that ALWAYS persists
+  const setIsFullScreen = useCallback((value) => {
+    fullscreenRef.current = value;
+    try {
+      sessionStorage.setItem('results-table-fullscreen', String(value));
+    } catch (e) {
+      console.warn('Failed to save fullscreen state:', e);
+    }
+    setIsFullScreenState(value);
+  }, []);
+
+  // ALWAYS sync state with sessionStorage - runs on every render cycle
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('results-table-fullscreen') === 'true';
+      if (saved !== fullscreenRef.current) {
+        fullscreenRef.current = saved;
+        setIsFullScreenState(saved);
+      } else if (saved !== isFullScreen) {
+        setIsFullScreenState(saved);
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+  });
+
+  // Also sync when key props change
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('results-table-fullscreen') === 'true';
+      if (saved && !isFullScreen) {
+        fullscreenRef.current = true;
+        setIsFullScreenState(true);
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns.length, rows.length]);
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [copiedCell, setCopiedCell] = useState(null);
   const [isCopyingRows, setIsCopyingRows] = useState(false);
@@ -245,89 +297,222 @@ const ResultsTable = ({ columns = [], rows = [], executionTime, rowsAffected, me
 
   // Query executed but returned no rows
   if (columns.length > 0 && rows.length === 0) {
+    // ALWAYS use the ref value which is the source of truth
+    const currentFullscreen = fullscreenRef.current;
+    
     return (
-      <div className="results-table-empty">
-        <div className="empty-result-icon">📭</div>
-        <p className="empty-result-title">No Results Found</p>
-        <p className="empty-result-message">
-          {message || 'The query executed successfully but returned no rows.'}
-        </p>
-        {rowsAffected !== undefined && (
-          <p className="empty-result-info">
-            <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
-          </p>
+      <div className="results-table-container">
+        {!currentFullscreen && (
+          <div className="results-table-header">
+            <div className="results-header-top">
+              <div className="results-title-section">
+                <h2 className="results-title">Query Results</h2>
+                <div className="results-info">
+                  <span className="info-item">
+                    <strong>Rows:</strong> 0
+                  </span>
+                  <span className="info-item">
+                    <strong>Columns:</strong> {columns.length}
+                  </span>
+                  {executionTime && (
+                    <span className="info-item">
+                      <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
+                    </span>
+                  )}
+                  {rowsAffected !== undefined && (
+                    <span className="info-item">
+                      <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
-        {executionTime && (
-          <p className="empty-result-info">
-            <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
-          </p>
-        )}
+        <div className={`results-table-wrapper ${currentFullscreen ? 'fullscreen' : ''}`}>
+          {currentFullscreen && (
+            <div className="fullscreen-header">
+              <div className="fullscreen-header-left">
+                <h3>Query Results</h3>
+                <div className="results-info">
+                  <span className="info-item">
+                    <strong>Rows:</strong> 0
+                  </span>
+                  <span className="info-item">
+                    <strong>Columns:</strong> {columns.length}
+                  </span>
+                  {executionTime && (
+                    <span className="info-item">
+                      <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
+                    </span>
+                  )}
+                  {rowsAffected !== undefined && (
+                    <span className="info-item">
+                      <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="fullscreen-header-right">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsFullScreen(false)}
+                  title="Exit full screen"
+                >
+                  ⤓ Exit Fullscreen
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="results-table-empty">
+            <div className="empty-result-icon">📭</div>
+            <p className="empty-result-title">No Results Found</p>
+            <p className="empty-result-message">
+              {message || 'The query executed successfully but returned no rows.'}
+            </p>
+            {rowsAffected !== undefined && (
+              <p className="empty-result-info">
+                <strong>Rows Affected:</strong> {rowsAffected.toLocaleString()}
+              </p>
+            )}
+            {executionTime && (
+              <p className="empty-result-info">
+                <strong>Execution Time:</strong> {executionTime.toFixed(2)} ms
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
 
   // Filter applied but no matching results
   if (filterTerm.trim() && filteredRows.length === 0) {
+    // ALWAYS use the ref value which is the source of truth
+    const currentFullscreen = fullscreenRef.current;
+    
     return (
       <div className="results-table-container">
-        <div className="results-table-header">
-          <div className="results-info">
-            <span className="info-item">
-              <strong>Rows:</strong> 0 of {rows.length.toLocaleString()}
-            </span>
-            <span className="info-item">
-              <strong>Columns:</strong> {visibleColumnsArray.length}
-            </span>
-          </div>
-          <div className="results-table-filter">
-            <select
-              className="results-filter-column"
-              value={filterColumn}
-              onChange={(e) => setFilterColumn(e.target.value)}
-              title="Filter by column"
-            >
-              <option value="all">All Columns</option>
-              {visibleColumnsArray.map(col => (
-                <option key={col} value={col}>{col}</option>
-              ))}
-            </select>
-            <div className="results-filter-input-wrapper">
-              <input
-                type="text"
-                className="results-filter-input"
-                placeholder="🔍 Filter results..."
-                value={filterTerm}
-                onChange={(e) => setFilterTerm(e.target.value)}
-              />
-              <button
-                className="btn btn-icon btn-sm results-filter-clear"
-                onClick={() => {
-                  setFilterTerm('');
-                  setFilterColumn('all');
-                }}
-                title="Clear filter"
+        {!currentFullscreen && (
+          <div className="results-table-header">
+            <div className="results-info">
+              <span className="info-item">
+                <strong>Rows:</strong> 0 of {rows.length.toLocaleString()}
+              </span>
+              <span className="info-item">
+                <strong>Columns:</strong> {visibleColumnsArray.length}
+              </span>
+            </div>
+            <div className="results-table-filter">
+              <select
+                className="results-filter-column"
+                value={filterColumn}
+                onChange={(e) => setFilterColumn(e.target.value)}
+                title="Filter by column"
               >
-                ×
-              </button>
+                <option value="all">All Columns</option>
+                {visibleColumnsArray.map(col => (
+                  <option key={col} value={col}>{col}</option>
+                ))}
+              </select>
+              <div className="results-filter-input-wrapper">
+                <input
+                  type="text"
+                  className="results-filter-input"
+                  placeholder="🔍 Filter results..."
+                  value={filterTerm}
+                  onChange={(e) => setFilterTerm(e.target.value)}
+                />
+                <button
+                  className="btn btn-icon btn-sm results-filter-clear"
+                  onClick={() => {
+                    setFilterTerm('');
+                    setFilterColumn('all');
+                  }}
+                  title="Clear filter"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="results-table-empty">
-          <div className="empty-result-icon">🔍</div>
-          <p className="empty-result-title">No Matching Results</p>
-          <p className="empty-result-message">
-            No rows match the filter "{filterTerm}" in {filterColumn === 'all' ? 'any column' : filterColumn}.
-          </p>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              setFilterTerm('');
-              setFilterColumn('all');
-            }}
-            style={{ marginTop: '1rem' }}
-          >
-            Clear Filter
-          </button>
+        )}
+        <div className={`results-table-wrapper ${currentFullscreen ? 'fullscreen' : ''}`}>
+          {currentFullscreen && (
+            <div className="fullscreen-header">
+              <div className="fullscreen-header-left">
+                <h3>Query Results</h3>
+                <div className="results-info">
+                  <span className="info-item">
+                    <strong>Rows:</strong> 0 of {rows.length.toLocaleString()}
+                  </span>
+                  <span className="info-item">
+                    <strong>Columns:</strong> {visibleColumnsArray.length}
+                  </span>
+                </div>
+              </div>
+              <div className="fullscreen-header-right">
+                <div className="results-table-controls">
+                  <div className="results-table-filter">
+                    <select
+                      className="results-filter-column"
+                      value={filterColumn}
+                      onChange={(e) => setFilterColumn(e.target.value)}
+                      title="Filter by column"
+                    >
+                      <option value="all">All Columns</option>
+                      {visibleColumnsArray.map(col => (
+                        <option key={col} value={col}>{col}</option>
+                      ))}
+                    </select>
+                    <div className="results-filter-input-wrapper">
+                      <input
+                        type="text"
+                        className="results-filter-input"
+                        placeholder="🔍 Filter results..."
+                        value={filterTerm}
+                        onChange={(e) => setFilterTerm(e.target.value)}
+                      />
+                      <button
+                        className="btn btn-icon btn-sm results-filter-clear"
+                        onClick={() => {
+                          setFilterTerm('');
+                          setFilterColumn('all');
+                        }}
+                        title="Clear filter"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsFullScreen(false)}
+                    title="Exit full screen"
+                  >
+                    ⤓ Exit Fullscreen
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="results-table-empty">
+            <div className="empty-result-icon">🔍</div>
+            <p className="empty-result-title">No Matching Results</p>
+            <p className="empty-result-message">
+              No rows match the filter "{filterTerm}" in {filterColumn === 'all' ? 'any column' : filterColumn}.
+            </p>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                setFilterTerm('');
+                setFilterColumn('all');
+              }}
+              style={{ marginTop: '1rem' }}
+            >
+              Clear Filter
+            </button>
+          </div>
         </div>
       </div>
     );
