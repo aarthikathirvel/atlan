@@ -276,17 +276,11 @@ atlan/
 │   │   ├── QueryFavorites.jsx           # Saved/favorite queries component
 │   │   ├── ExportButtons.jsx            # Export functionality (CSV, JSON, Excel)
 │   │   ├── ExportButtons.test.jsx       # Tests for ExportButtons
-│   │   ├── ResultStatistics.jsx         # Data statistics and analysis panel
-│   │   ├── DataVisualization.jsx        # Data visualization component (charts)
-│   │   ├── QueryPerformanceDashboard.jsx # Performance metrics dashboard
-│   │   ├── QueryExplainPlan.jsx         # Query execution plan visualizer
-│   │   ├── QuerySuggestions.jsx         # Smart query suggestions
-│   │   └── KeyboardShortcuts.jsx        # Keyboard shortcuts help modal
+│   │   └── ResultStatistics.jsx         # Data statistics and analysis panel
 │   ├── hooks/
 │   │   ├── useQueryHistory.js           # Custom hook for query history management
 │   │   ├── useQueryHistory.test.js      # Tests for useQueryHistory
-│   │   ├── useFavorites.js              # Custom hook for favorite queries
-│   │   └── useTheme.js                   # Custom hook for theme management
+│   │   └── useFavorites.js              # Custom hook for favorite queries
 │   ├── data/
 │   │   ├── mockData.js                   # Mock data and query execution logic
 │   │   └── mockData.test.js              # Tests for mockData
