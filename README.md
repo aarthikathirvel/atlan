@@ -17,9 +17,9 @@ A modern, feature-rich web application for running SQL queries and viewing resul
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Performance Optimizations**: 
   - Virtual scrolling for large result sets
-  - Lazy loading and code splitting
+  - Code splitting for optimized bundle sizes
   - Optimized re-renders with React hooks
-- **Local Storage**: Query history persists across browser sessions
+- **Local Storage**: Query history and favorites persist across browser sessions
 - **Loading States**: Visual feedback during query execution
 - **Error Handling**: User-friendly error messages
 
@@ -30,8 +30,7 @@ A modern, feature-rich web application for running SQL queries and viewing resul
   - Real-time statistics calculation
 - **Enhanced Query Editor**: 
   - SQL syntax highlighting with Ace Editor
-  - Auto-completion and code snippets
-  - Query validation and error detection
+  - Auto-completion support
 - **Advanced Results Table**:
   - Column visibility controls
   - Multi-row selection and copying
@@ -155,11 +154,10 @@ Performance metrics were measured using multiple methods to ensure accuracy:
 
 ### Performance Optimizations Implemented
 
-#### 1. Code Splitting & Lazy Loading
-- **Dynamic Imports**: Heavy components like Ace Editor are loaded on-demand
-- **Route-based Splitting**: Components split at the route level (if routing is added)
-- **Component-level Lazy Loading**: Editor components load only when needed
-- **Result**: Reduced initial bundle size by ~40%
+#### 1. Code Splitting
+- **Manual Chunks**: Libraries split into separate chunks (react-vendor, ace-editor, virtual-scroll)
+- **Dynamic Import**: Excel library (xlsx) is lazy-loaded only when exporting to Excel
+- **Result**: Optimized bundle sizes and faster initial load
 
 #### 2. Virtual Scrolling
 - **Library**: `@tanstack/react-virtual` for efficient rendering
@@ -217,7 +215,7 @@ Performance metrics were measured using multiple methods to ensure accuracy:
 | Optimization | Impact | Performance Gain |
 |-------------|--------|------------------|
 | Virtual Scrolling | High | 95% faster rendering |
-| Code Splitting | Medium | 40% smaller bundle |
+| Code Splitting | Medium | Optimized bundle sizes |
 | Memoization | Medium | 60% fewer re-renders |
 | Bundle Optimization | Medium | 30% faster load time |
 | Caching | Low | 50% faster subsequent loads |
@@ -249,8 +247,10 @@ https://drive.google.com/file/d/1VFR5qbxMqYz-UwTOfRmRE3crprW25jOj/view?usp=shari
 
 ### Exporting Results
 
-- Click "Export CSV" to download results as a CSV file
-- Click "Export JSON" to download results as a JSON file
+- Click "Export" button to access export options:
+  - **CSV**: Download results as a CSV file
+  - **JSON**: Download results as a JSON file
+  - **Excel**: Download results as an Excel file (xlsx library loaded on-demand)
 
 ### Query History
 
@@ -318,7 +318,7 @@ atlan/
 
 ### Performance
 - **Virtual Scrolling**: Essential for handling large datasets without performance issues
-- **Lazy Loading**: Components load only when needed
+- **Code Splitting**: Libraries split into optimized chunks
 - **Optimized Re-renders**: Careful use of React hooks prevents unnecessary updates
 
 ### Code Quality
